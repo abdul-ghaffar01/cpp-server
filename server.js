@@ -7,8 +7,10 @@ app.use(express.json());
 
 const PORT = 4000;
 
+const myServer = `http://${process.env.IP}:3001`
+
 app.use(cors({
-    origin: "",  // Allow only this domain
+    origin: myServer,
 }));
 
 // Store up to 30 user processes
