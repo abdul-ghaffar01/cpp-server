@@ -1,13 +1,12 @@
 const express = require("express");
 const { spawn } = require("child_process");
 const { v4: uuidv4 } = require("uuid");
-
+const cors = require("cors")
 const app = express();
 app.use(express.json());
 
 const PORT = 4000;
-
-const myServer = `http://${process.env.IP}:3001`
+const myServer = process.env.IP ? `http://${process.env.IP}:3001` : "http://localhost:3001"
 
 app.use(cors({
     origin: myServer,
@@ -18,6 +17,10 @@ const userProcesses = new Map(); // { sessionId: { process, outputBuffer, timeou
 const MAX_USERS = 30;
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
+const fileNames = {
+    cbes: "console-based-ecommerce-store.out"
+}
+
 /** 📌 Start a new process for a user */
 app.post("/start-process", (req, res) => {
     if (userProcesses.size >= MAX_USERS) {
@@ -27,7 +30,8 @@ app.post("/start-process", (req, res) => {
     const { application } = req.body;
 
     const sessionId = uuidv4();
-    const process = spawn("./a.out", [], { stdio: ["pipe", "pipe", "pipe"] });
+    const process = spawn(`./apps/${fileNames[application]}`, [], { stdio: ["pipe", "pipe", "pipe"] });
+    // const process = spawn(`./apps/console-based-ecommerce-store.out`, [], { stdio: ["pipe", "pipe", "pipe"] });
 
     let outputBuffer = [];
 
@@ -80,8 +84,12 @@ app.post("/send-input", (req, res) => {
 });
 
 /** 📌 Get output of a specific process */
+const MAX_BUFFER_SIZE = 100; // Keep the last 100 lines of output
+
+/** 📌 Get output of a specific process */
 app.get("/get-output", (req, res) => {
     const { sessionId } = req.query;
+    console.log(sessionId, "this is session id");
 
     if (!userProcesses.has(sessionId)) {
         return res.status(400).json({ error: "Invalid session ID or process not running." });
@@ -89,11 +97,14 @@ app.get("/get-output", (req, res) => {
 
     const userProcess = userProcesses.get(sessionId);
     const output = userProcess.outputBuffer.join("").trim();
-    userProcess.outputBuffer = []; // Clear buffer after sending
+
+    // Implement a rolling buffer
+    if (userProcess.outputBuffer.length > MAX_BUFFER_SIZE) {
+        userProcess.outputBuffer = userProcess.outputBuffer.slice(-MAX_BUFFER_SIZE);
+    }
 
     res.json({ sessionId, output });
 });
-
 /** 📌 Stop a specific process */
 app.post("/stop-process", (req, res) => {
     const { sessionId } = req.body;
