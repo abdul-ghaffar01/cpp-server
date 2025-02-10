@@ -12,6 +12,7 @@ app.use(cors({
     origin: myServer,
 }));
 
+const MAX_BUFFER_SIZE = 100; // Keep the last 100 lines of output
 // Store up to 30 user processes
 const userProcesses = new Map(); // { sessionId: { process, outputBuffer, timeout } }
 const MAX_USERS = 30;
@@ -30,7 +31,7 @@ app.post("/start-process", (req, res) => {
     const { application } = req.body;
 
     const sessionId = uuidv4();
-    const process = spawn(`./apps/${fileNames[application]}`, [], { stdio: ["pipe", "pipe", "pipe"] });
+    const process = spawn(`./${fileNames[application]}`, [], { stdio: ["pipe", "pipe", "pipe"], cwd: "apps" },);
     // const process = spawn(`./apps/console-based-ecommerce-store.out`, [], { stdio: ["pipe", "pipe", "pipe"] });
 
     let outputBuffer = [];
@@ -44,9 +45,14 @@ app.post("/start-process", (req, res) => {
     });
 
     process.on("close", (code) => {
-        console.log(`Process ${sessionId} exited with code ${code}`);
+        console.log(`Process ${sessionId} exited with code ${code} after receiving input.`);
         userProcesses.delete(sessionId);
     });
+
+    process.on("exit", (code, signal) => {
+        console.log(`Process ${sessionId} exited with code ${code}, signal ${signal}`);
+    });
+
 
     // Set auto-clean timeout
     const timeout = setTimeout(() => {
@@ -70,26 +76,61 @@ app.post("/send-input", (req, res) => {
     }
 
     const userProcess = userProcesses.get(sessionId);
+
+    // Append input to the output buffer (to keep track of history)
+    userProcess.outputBuffer.push(`${input}\n`);
+
+    // Send input to the process
     userProcess.process.stdin.write(input + "\n");
 
-    // Reset inactivity timeout
-    clearTimeout(userProcess.timeout);
-    userProcess.timeout = setTimeout(() => {
-        userProcess.process.kill();
-        userProcesses.delete(sessionId);
-        console.log(`Process ${sessionId} auto-terminated due to inactivity.`);
-    }, INACTIVITY_TIMEOUT);
+    let responseSent = false; // Ensure only one response is sent
 
-    res.json({ message: "Input sent!", input });
+    // Listen for process exit
+    userProcess.process.once("exit", (code, signal) => {
+        if (!responseSent) {
+            console.log(`Process ${sessionId} exited after input. Code: ${code}, Signal: ${signal}`);
+
+            // Capture the final output before deleting the session
+            const history = userProcess.outputBuffer.join("").trim();
+
+            // Send termination response with history
+            res.json({
+                message: "Input sent, but process terminated!",
+                input,
+                terminated: true,
+                exitCode: code,
+                signal,
+                history
+            });
+
+            // Clean up process data
+            userProcesses.delete(sessionId);
+            responseSent = true;
+        }
+    });
+    const output = userProcess.outputBuffer.join("").trim();
+
+    // clearing the ansii codes 
+    const cleanOutput = output.replace(/\x1B\[[0-9;]*m/g, '');
+
+    // Delay checking if the process is still running
+    setTimeout(() => {
+        if (!responseSent && userProcesses.has(sessionId)) {
+            res.json({
+                message: "Input sent!",
+                input,
+                terminated: false,
+                history: cleanOutput
+            });
+            responseSent = true;
+        }
+    }, 100); // Short delay to check if process terminated
 });
 
-/** 📌 Get output of a specific process */
-const MAX_BUFFER_SIZE = 100; // Keep the last 100 lines of output
 
 /** 📌 Get output of a specific process */
 app.get("/get-output", (req, res) => {
     const { sessionId } = req.query;
-    console.log(sessionId, "this is session id");
 
     if (!userProcesses.has(sessionId)) {
         return res.status(400).json({ error: "Invalid session ID or process not running." });
@@ -102,8 +143,9 @@ app.get("/get-output", (req, res) => {
     if (userProcess.outputBuffer.length > MAX_BUFFER_SIZE) {
         userProcess.outputBuffer = userProcess.outputBuffer.slice(-MAX_BUFFER_SIZE);
     }
+    const cleanOutput = output.replace(/\x1B\[[0-9;]*m/g, '');
 
-    res.json({ sessionId, output });
+    res.json({ sessionId, output: cleanOutput });
 });
 /** 📌 Stop a specific process */
 app.post("/stop-process", (req, res) => {

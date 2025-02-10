@@ -1,0 +1,10 @@
+pd-101,Fitbit Versa 4,199.0000,20,Health and fitness smartwatch with GPS
+pd-102,MacBook Air M2,1200.000000,15,Lightweight and powerful laptop with the latest M2 chip
+pd-103,Samsung Galaxy S23,1000.00,30,Flagship smartphone with cutting-edge features
+pd-104,Dell XPS 15,1500.000000,10,High-performance laptop for professionals
+pd-105,AirPods Pro,250.00,50,Noise-cancelling earbuds with spatial audio
+pd-106,PlayStation 5,499.0000,25,Next-gen gaming console with immersive gameplay
+pd-107,Kindle Paperwhite,129.0000,40,Best e-reader with adjustable warm light
+pd-108,Nike Air Max,150.000000,60,Stylish and comfortable running shoes
+pd-109,Sony WH-1000XM5,399.0000,35,Industry-leading noise-cancelling headphones
+pd-110,Logitech MX Master 3,99.0000,45,Advanced wireless mouse for professionals
