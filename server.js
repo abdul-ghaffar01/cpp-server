@@ -19,7 +19,8 @@ const MAX_USERS = 30;
 const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
 const fileNames = {
-    cbes: "console-based-ecommerce-store.out"
+    cbes: "console-based-ecommerce-store.out",
+    dbms: "dbms-first-semester.out",
 }
 
 /** 📌 Start a new process for a user */
@@ -29,7 +30,7 @@ app.post("/start-process", (req, res) => {
     }
 
     const { application } = req.body;
-
+    console.log(application, fileNames[application])
     const sessionId = uuidv4();
     const process = spawn(`./${fileNames[application]}`, [], { stdio: ["pipe", "pipe", "pipe"], cwd: "apps" },);
     // const process = spawn(`./apps/console-based-ecommerce-store.out`, [], { stdio: ["pipe", "pipe", "pipe"] });
