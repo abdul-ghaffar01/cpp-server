@@ -23,6 +23,11 @@ const fileNames = {
     dbms: "dbms-first-semester.out",
 }
 
+// To test the server
+app.get("/", (req, res)=>{
+    return res.json({"working": "Just fine"})
+})
+
 /** 📌 Start a new process for a user */
 app.post("/start-process", (req, res) => {
     if (userProcesses.size >= MAX_USERS) {
