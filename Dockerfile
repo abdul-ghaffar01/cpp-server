@@ -1,5 +1,5 @@
-# Use Node.js base image
-FROM node:18-alpine
+# Use Node.js base image with Debian (glibc support)
+FROM node:18-bullseye
 
 # Set working directory
 WORKDIR /exec-server
@@ -12,10 +12,10 @@ RUN npm install --production
 COPY server.js .
 COPY apps ./apps
 
-# Give execute permission to files in the 'files' folder
+# Give execute permission to binaries in apps folder
 RUN chmod +x ./apps/*
 
-# Expose port (e.g., Express listens on 5000)
+# Expose port (Express listens on 4000)
 EXPOSE 4000
 
 # Start server
