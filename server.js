@@ -25,7 +25,7 @@ const fileNames = {
 
 // To test the server
 app.get("/", (req, res)=>{
-    return res.json({"working": "Just fine"})
+    return res.json({"working": "Yeah perfect"})
 })
 
 /** 📌 Start a new process for a user */
