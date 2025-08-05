@@ -1,5 +1,5 @@
-# Use Node.js base image with Debian (glibc support)
-FROM node:18-bullseye
+# Use Node.js base image with GLIBC 2.34+ (Debian Bookworm)
+FROM node:18-bookworm
 
 # Set working directory
 WORKDIR /exec-server
